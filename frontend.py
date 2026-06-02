@@ -409,6 +409,7 @@ with tab_val:
 # TAB 2 — New Post
 # ═══════════════════════════════════════════════════════════════════════════════
 with tab_new:
+    is_collab   = st.checkbox("Collaboration post")
     with st.form("nf"):
         r1a, r1b, r1c = st.columns([2, 2, 2])
         brand      = r1a.selectbox("Brand", KNOWN_BRANDS)
@@ -422,7 +423,6 @@ with tab_new:
         post_time = r2c.time_input("Time", dt_time(12, 0))
         created_at = datetime.combine(post_date, post_time).isoformat()
 
-        is_collab   = st.checkbox("Collaboration post")
         collabs_raw = st.text_input("Collaborator handles (comma-separated)",
                                     placeholder="@handle1, @handle2",
                                     disabled=not is_collab)

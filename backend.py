@@ -6,6 +6,12 @@ Or via main.py which launches both backend and frontend.
 
 from __future__ import annotations
 
+import os
+
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import hashlib
 import json
 import re
@@ -109,10 +115,20 @@ def _get_model() -> tuple[xgb.XGBClassifier, list[str], shap.TreeExplainer]:
     return _model, _feat_cols, _explainer
 
 
-def _get_embed_model() -> SentenceTransformer:
+def _get_embed_model():
     global _embed_model
+
     if _embed_model is None:
-        _embed_model = SentenceTransformer(EMBED_MODEL_ID)
+        print("Loading embedding model")
+        print("model id", EMBED_MODEL_ID)
+        _embed_model = SentenceTransformer(
+            EMBED_MODEL_ID,
+            device="cpu"
+        )
+
+        print("Loaded")
+        print("Device:", _embed_model.device)
+
     return _embed_model
 
 
@@ -369,12 +385,24 @@ def _retrieve_similar(
     query = f"{caption} {img_summary}".strip()
     if not query:
         return []
-
     hist_df, hist_emb = _get_history()
+    print(type(query))
+    print(repr(query[:500]))
     embed_model       = _get_embed_model()
-    q_emb             = embed_model.encode(
-        [query], normalize_embeddings=True, show_progress_bar=False
+    print(embed_model)
+    
+    import time
+
+    start = time.time()
+
+    q_emb = embed_model.encode(
+        [query],  # temporary safety limit
+        normalize_embeddings=True,
+        show_progress_bar=False,
+        batch_size=1,
+        convert_to_numpy=True,
     )
+
     sims = cosine_similarity(q_emb, hist_emb)[0]
 
     results = []
